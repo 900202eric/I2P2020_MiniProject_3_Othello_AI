@@ -1,0 +1,9 @@
+gamelog.txt
+main
+makefile
+player_infinite
+player_invalid
+player_partial
+player_random
+.vscode/
+.DS_Store

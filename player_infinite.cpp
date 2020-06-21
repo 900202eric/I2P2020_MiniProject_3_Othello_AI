@@ -27,6 +27,18 @@ struct Point {
 	}
 };
 
+
+int table[8][8] = {
+    {99, -8, 8, 6, 6, 8, -8, 99},
+    {-8, -24, -4, -3, -3, -4, -24, -8},
+    {8, -4, 7, 4, 4, 7, -4, 8},
+    {6, -3, 4, 0, 0, 4, -3, 6},
+    {6, -3, 4, 0, 0, 4, -3, 6},
+    {8, -4, 7, 4, 4, 7, -4, 8},
+    {-8, -24, -4, -3, -3, -4, -24, -8},
+    {99, -8, 8, 6, 6, 8, -8, 99}
+};
+
 class OthelloBoard {
 public:
     enum SPOT_STATE {
@@ -284,6 +296,16 @@ void write_valid_spot(OthelloBoard game_origin, std::ofstream& fout) {
     srand(time(NULL));
     // Keep updating the output until getting killed.
     //while (true) {
+        int weight = 0;
+        for(int i = 0; i < n_valid_spots; i++) {
+            Point p = next_valid_spots[i];
+            if(table[p.x][p.y] > weight) {
+                weight = table[p.x][p.y];
+                fout << p.x << " " << p.y << std::endl;
+                fout.flush();
+            }
+        }
+
         int defaultdepth = 6;
         float bestScore = INT_MIN;
         Point bestMove(-1, -1);
@@ -295,7 +317,7 @@ void write_valid_spot(OthelloBoard game_origin, std::ofstream& fout) {
             game_next.put_disc(p);
         
             float moveScore = getMinValue(game_next, defaultdepth-1, alpha, beta);
-            
+            moveScore += table[p.x][p.y];
             if((bestMove.x == -1 && bestMove.y == -1) || bestScore < moveScore) {
                 bestScore = moveScore;
                 bestMove.x = p.x;
@@ -323,7 +345,7 @@ int main(int, char** argv) {
 
 float evaluationBoard(OthelloBoard game) {
     // need implement
-    return game.next_valid_spots.size() + game.disc_count[1] - game.disc_count[2];
+    return (game.next_valid_spots.size() + (game.disc_count[game.cur_player] - game.disc_count[3-game.cur_player])*2.5)*5;
 }
 
 float getMaxValue(OthelloBoard game, int depth, float alpha, float beta) {
@@ -337,6 +359,7 @@ float getMaxValue(OthelloBoard game, int depth, float alpha, float beta) {
         game_next.put_disc(p);
         
         float moveScore = getMinValue(game_next, depth-1, alpha, beta);
+        moveScore += table[p.x][p.y];
         best = std::max(best, moveScore);
         alpha = std::max(alpha, moveScore);
         if(beta <= alpha) {
@@ -357,6 +380,7 @@ float getMinValue(OthelloBoard game, int depth, float alpha, float beta) {
         game_next.put_disc(p);
         
         float moveScore = getMaxValue(game_next, depth-1, alpha, beta);
+        moveScore -= table[p.x][p.y];
         worst = std::min(worst, moveScore);
         beta = std::min(worst, moveScore);
         if(beta <= alpha) {

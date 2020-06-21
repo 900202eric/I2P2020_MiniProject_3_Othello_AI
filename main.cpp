@@ -257,6 +257,12 @@ int main(int argc, char** argv) {
     std::string player_filename[3];
     player_filename[1] = argv[1];
     player_filename[2] = argv[2];
+    
+    /* code for running 50 test
+    int black_win = 0, white_win = 0;
+    for(int ti = 0; ti < 50; ti++){
+    */
+
     std::cout << "Player Black File: " << player_filename[OthelloBoard::BLACK] << std::endl;
     std::cout << "Player White File: " << player_filename[OthelloBoard::WHITE] << std::endl;
     OthelloBoard game;
@@ -296,8 +302,19 @@ int main(int argc, char** argv) {
         data = game.encode_output();
         std::cout << data;
         log << data;
+        //std::cout << "Black: " << black_win << " White: " << white_win << std::endl;
     }
+    /*//  the code for running 50 test
+    std::cout << "Winner is: " << game.winner << std::endl;
     log.close();
+    if(game.winner == 1)
+        black_win++;
+    if(game.winner == 2)
+        white_win++;
+    }
+    std::cout << "Black: " << black_win << " White: " << white_win << std::endl;
+    */
+
     // Reset state file
     if (remove(file_state.c_str()) != 0)
         std::cerr << "Error removing file: " << file_state << "\n";

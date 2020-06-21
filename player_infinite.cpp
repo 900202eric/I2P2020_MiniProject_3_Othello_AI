@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <limits.h>
 
 struct Point {
     int x, y;
@@ -272,45 +273,38 @@ void read_valid_spots(std::ifstream& fin) {
     }
 }
 
+float evaluationBoard(OthelloBoard game);
+
+float getMaxValue(OthelloBoard game, int depth, float alpha, float beta);
+
+float getMinValue(OthelloBoard game, int depth, float alpha, float beta);
+
 void write_valid_spot(OthelloBoard game_origin, std::ofstream& fout) {
     int n_valid_spots = next_valid_spots.size();
     srand(time(NULL));
     // Keep updating the output until getting killed.
     //while (true) {
-        int valid_max = 100;
-        int max_x = -1;
-        int max_y = -1;
-        std::string data;
-        std::stringstream ss;
+        int defaultdepth = 6;
+        float bestScore = INT_MIN;
+        Point bestMove(-1, -1);
+        float alpha = INT_MIN;
+        float beta = INT_MAX;
         for(int i = 0; i < n_valid_spots; i++) {
-            std::cout << "Stimulate: " << i << std::endl;
-            OthelloBoard game(game_origin);
+            OthelloBoard game_next(game_origin);
             Point p = next_valid_spots[i];
-            game.put_disc(p);
-            data = game.encode_state();
-            ss << data;
-            int player;
-            ss >> player;
-            std::array<std::array<int, SIZE>, SIZE> board;
-            for (int a = 0; a < SIZE; a++) {
-                for (int b = 0; b < SIZE; b++) {
-                    ss >> board[a][b];
-                }
+            game_next.put_disc(p);
+        
+            float moveScore = getMinValue(game_next, defaultdepth-1, alpha, beta);
+            
+            if((bestMove.x == -1 && bestMove.y == -1) || bestScore < moveScore) {
+                bestScore = moveScore;
+                bestMove.x = p.x;
+                bestMove.y = p.y;
             }
-            int valid_size;
-            ss >> valid_size;
-            std::cout << valid_size << std::endl;
-            ss.str("");
-            if(valid_size < valid_max) {
-                valid_max = valid_size;
-                max_x = p.x;
-                max_y = p.y;
-            }
-            data = game.encode_output();
-            std::cout << data;
         }
         // Remember to flush the output to ensure the last action is written to file.
-        fout << max_x << " " << max_y << std::endl;
+        //std::cout << bestMove.x << " " << bestMove.y << std::endl;
+        fout << bestMove.x << " " << bestMove.y << std::endl;
         fout.flush();
     //}
 }
@@ -325,4 +319,49 @@ int main(int, char** argv) {
     fin.close();
     fout.close();
     return 0;
+}
+
+float evaluationBoard(OthelloBoard game) {
+    // need implement
+    return game.next_valid_spots.size() + game.disc_count[1] - game.disc_count[2];
+}
+
+float getMaxValue(OthelloBoard game, int depth, float alpha, float beta) {
+    if(depth == 0) {return evaluationBoard(game);}
+
+    float best = INT_MIN;
+
+    for(int i = 0; i < game.next_valid_spots.size(); i++) {
+        OthelloBoard game_next(game);
+        Point p = game_next.next_valid_spots[i];
+        game_next.put_disc(p);
+        
+        float moveScore = getMinValue(game_next, depth-1, alpha, beta);
+        best = std::max(best, moveScore);
+        alpha = std::max(alpha, moveScore);
+        if(beta <= alpha) {
+            return best;
+        }
+    }
+    return best;
+}
+
+float getMinValue(OthelloBoard game, int depth, float alpha, float beta) {
+    if(depth == 0) {return evaluationBoard(game);}
+
+    float worst = INT_MAX;
+
+    for(int i = 0; i < game.next_valid_spots.size(); i++) {
+        OthelloBoard game_next(game);
+        Point p = game_next.next_valid_spots[i];
+        game_next.put_disc(p);
+        
+        float moveScore = getMaxValue(game_next, depth-1, alpha, beta);
+        worst = std::min(worst, moveScore);
+        beta = std::min(worst, moveScore);
+        if(beta <= alpha) {
+            return worst;
+        }
+    }
+    return worst;
 }

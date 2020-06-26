@@ -307,6 +307,8 @@ void write_valid_spot(OthelloBoard game_origin, std::ofstream& fout) {
         }
 
         int defaultdepth = 6;
+        if(game_origin.disc_count[0] <= 10) defaultdepth = game_origin.disc_count[0];
+        if(n_valid_spots > 16) defaultdepth = 4;
         float bestScore = INT_MIN;
         Point bestMove(-1, -1);
         float alpha = INT_MIN;
@@ -345,6 +347,9 @@ int main(int, char** argv) {
 
 float evaluationBoard(OthelloBoard game) {
     // need implement
+    if(game.disc_count[0] <= 10) {
+        return game.disc_count[game.cur_player] - game.disc_count[3-game.cur_player];
+    } 
     return (game.next_valid_spots.size() + (game.disc_count[game.cur_player] - game.disc_count[3-game.cur_player])*2.5)*5;
 }
 

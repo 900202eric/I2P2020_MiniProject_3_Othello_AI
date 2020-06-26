@@ -9,3 +9,5 @@ player_random
 .vscode/
 .DS_Store
 test.txt
+action
+state

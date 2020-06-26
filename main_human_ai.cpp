@@ -137,8 +137,8 @@ public:
     }
     bool put_disc(Point p) {
         if(!is_spot_valid(p)) {
-            winner = get_next_player(cur_player);
-            done = true;
+            //winner = get_next_player(cur_player);
+            //done = true;
             return false;
         }
         set_disc(p, cur_player);
@@ -187,7 +187,7 @@ public:
         } else {
             ss << "Winner is " << encode_player(winner) << "\n";
         }
-        ss << "  0 1 2 3 4 5 6 7 8\n";
+        ss << "   0 1 2 3 4 5 6 7 \n";
         ss << "  +---------------+\n";
         for (i = 0; i < SIZE; i++) {
             ss << i;
@@ -236,9 +236,28 @@ const std::string file_action = "action";
 // Timeout is set to 10 when TA test your code.
 const int timeout = 10;
 
+void launch_executable(std::string filename) {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+    std::string command = "start /min " + filename + " " + file_state + " " + file_action;
+    std::string kill = "timeout /t " + std::to_string(timeout) + " > NUL && taskkill /im " + filename + " > NUL";
+    system(command.c_str());
+    system(kill.c_str());
+#elif __linux__
+    std::string command = "timeout " + std::to_string(timeout) + "s " + filename + " " + file_state + " " + file_action;
+    system(command.c_str());
+#elif __APPLE__
+    // May require installing the command by:
+    // brew install coreutils
+    std::string command = "gtimeout " + std::to_string(timeout) + "s " + filename + " " + file_state + " " + file_action;
+    system(command.c_str());
+#endif
+}
+
 int main(int argc, char** argv) {
     //assert(argc == 3);
     std::ofstream log("gamelog.txt");
+    std::string player_filename[3];
+    player_filename[1] = argv[1];
     std::cout << "Player Black File: " << "Human" << std::endl;
     std::cout << "Player White File: " << "AI"    << std::endl;
     OthelloBoard game;
@@ -247,46 +266,62 @@ int main(int argc, char** argv) {
     std::cout << data;
     log << data;
     while (!game.done) {
-        // Human Turn
-        // Read action
-        Point p(-1, -1);
-        int x, y;
-        std::cin >> x;
-        std::cin >> y;
-        p.x = x; p.y = y;
+        if(game.cur_player == 1) {
+            // Human Turn
+            // Read action
+            Point p(-1, -1);
+            int x, y;
+            std::cin >> x;
+            std::cin >> y;
+            p.x = x; p.y = y;
 
-        // Take action
-        if (!game.put_disc(p)) {
-            // If action is invalid.
-            data = game.encode_output(true);
+            // Take action
+            while (!game.put_disc(p)) {
+                std::cin >> x;
+                std::cin >> y;
+                p.x = x; p.y = y;
+            }
+            data = game.encode_output();
             std::cout << data;
             log << data;
-            break;
+
         }
-        data = game.encode_output();
-        std::cout << data;
-        log << data;
 
-        // AI Turn
-        data = game.encode_state();
+        if(game.cur_player == 2) {
+            
+            // AI Turn
+            data = game.encode_state();
 
-        // Read action
-        Point p2(-1, -1);
-        int x2, y2;
-        std::cin >> x2;
-        std::cin >> y2;
-        p2.x = x2; p2.y = y2;
-        // Take action
-        if (!game.put_disc(p2)) {
-            // If action is invalid.
-            data = game.encode_output(true);
+            std::ofstream fout(file_state);
+            fout << data;
+            fout.close();
+            // Run external program
+            launch_executable(player_filename[1]);
+            // Read action
+            std::ifstream fin(file_action);
+            Point p2(-1, -1);
+            while (true) {
+                int x, y;
+                if (!(fin >> x)) break;
+                if (!(fin >> y)) break;
+                p2.x = x; p2.y = y;
+            }
+            fin.close();
+            // Reset action file
+            if (remove(file_action.c_str()) != 0)
+                std::cerr << "Error removing file: " << file_action << "\n";
+            // Take action
+            if (!game.put_disc(p2)) {
+                // If action is invalid.
+                data = game.encode_output(true);
+                std::cout << data;
+                log << data;
+                break;
+            }
+            data = game.encode_output();
             std::cout << data;
             log << data;
-            break;
         }
-        data = game.encode_output();
-        std::cout << data;
-        log << data;
     }
     log.close();
     // Reset state file
